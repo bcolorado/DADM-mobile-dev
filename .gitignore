@@ -1,24 +1,71 @@
-# Compiled class file
+# Android Studio
+.idea/
+*.iml
+.gradle/
+build/
+local.properties
+*.hprof
+captures/
+output/
+
+# Kotlin
+*.kotlin_module
+*.kotlin_builtins
+
+# Android specific
+*.apk
+*.ap_
+*.dex
 *.class
-
-# Log file
-*.log
-
-# BlueJ files
-*.ctxt
-
-# Mobile Tools for Java (J2ME)
-.mtj.tmp/
-
-# Package Files #
 *.jar
 *.war
-*.nar
-*.ear
+*.so
+*.log
+*.xml
+
+# Miscellaneous
+*.DS_Store
+*.class
+*.log
+*.aux
+*.out
+*.toc
+*.swp
+*.swo
 *.zip
-*.tar.gz
+*.tar
+*.gz
+*.tgz
 *.rar
 
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
-hs_err_pid*
-replay_pid*
+# MacOS
+*.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+
+# Gradle
+.gradle/
+build/
+app/build/
+**/build/
+**/out/
+**/bin/
+**/gen/
+**/generated/
+
+# IntelliJ
+.idea/
+*.iml
+
+# Android Studio project files
+app/gradle.properties
+app/.gradle/
+*.keystore
+*.jks
+*.asc
+
+# Jetpack Compose
+*.compose/
+*.compose-cache/
