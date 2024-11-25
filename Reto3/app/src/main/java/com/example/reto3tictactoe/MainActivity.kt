@@ -7,6 +7,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -38,6 +42,11 @@ fun TicTacToeGame() {
     var playerWins by remember { mutableStateOf(0) }
     var aiWins by remember { mutableStateOf(0) }
     var draws by remember { mutableStateOf(0) } // Contador de empates
+    var aiDifficulty by remember { mutableStateOf("Difícil") }
+
+    // Estados para los diálogos
+    var showDifficultyDialog by remember { mutableStateOf(false) }
+    var showExitDialog by remember { mutableStateOf(false) }
 
     fun checkWinner(): String? {
         // Filas y columnas
@@ -58,15 +67,56 @@ fun TicTacToeGame() {
         return null
     }
 
-    fun aiMove() {
+    // Dificultad Fácil: Juega al azar
+    fun aiMoveEasy() {
+        val emptyCells = board.flatMapIndexed { rowIndex, row ->
+            row.mapIndexedNotNull { colIndex, value ->
+                if (value.isEmpty()) Pair(rowIndex, colIndex) else null
+            }
+        }
+        if (emptyCells.isNotEmpty()) {
+            val (row, col) = emptyCells.random()
+            board[row][col] = "O"
+        }
+    }
+
+    // Dificultad Normal: Prioriza bloqueo/ganar pero sin estrategias avanzadas
+    fun aiMoveNormal() {
+        // Intentar ganar
+        for (i in 0..2) {
+            for (j in 0..2) {
+                if (board[i][j].isEmpty()) {
+                    board[i][j] = "O"
+                    if (checkWinner() == "O") return
+                    board[i][j] = ""
+                }
+            }
+        }
+        // Bloquear al jugador
+        for (i in 0..2) {
+            for (j in 0..2) {
+                if (board[i][j].isEmpty()) {
+                    board[i][j] = "X"
+                    if (checkWinner() == "X") {
+                        board[i][j] = "O"
+                        return
+                    }
+                    board[i][j] = ""
+                }
+            }
+        }
+        // Si no hay nada crítico, jugar al azar
+        aiMoveEasy()
+    }
+
+    // Dificultad Difícil: Implementa estrategias avanzadas
+    fun aiMoveHard() {
         // Verificar si la IA puede ganar
         for (i in 0..2) {
             for (j in 0..2) {
                 if (board[i][j].isEmpty()) {
                     board[i][j] = "O" // Marcar temporalmente
-                    if (checkWinner() == "O") {
-                        return // Realizar movimiento ganador
-                    }
+                    if (checkWinner() == "O") return // Realizar movimiento ganador
                     board[i][j] = "" // Deshacer movimiento
                 }
             }
@@ -86,7 +136,6 @@ fun TicTacToeGame() {
             }
         }
 
-        // Si no hay jugadas críticas, jugar de forma estratégica
         // Priorizar el centro
         if (board[1][1].isEmpty()) {
             board[1][1] = "O"
@@ -112,113 +161,204 @@ fun TicTacToeGame() {
         }
     }
 
+    fun aiMove() {
+        when (aiDifficulty) {
+            "Fácil" -> aiMoveEasy()
+            "Normal" -> aiMoveNormal()
+            else -> aiMoveHard()
+        }
+    }
+
     fun resetBoard() {
         board = List(3) { MutableList(3) { "" } }
         currentPlayer = "X"
         message = "Tú turno!"
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally
+
+        Box(
+            modifier = Modifier.fillMaxSize()
         ) {
-            Text(
-                text = "Tic Tac Toe",
-                fontSize = 32.sp,
-                color = Color(0xFFFFF7C2),
-                modifier = Modifier.padding(16.dp).padding(bottom = 24.dp)
-            )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 64.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(text = "Jugador 😎: $playerWins", fontSize = 18.sp)
-                Text(text = "IA 🤖: $aiWins", fontSize = 18.sp)
-                Text(text = "Empates 😮: $draws", fontSize = 18.sp) // Mostrar empates
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            // Tablero
-            for (i in 0..2) {
-                Row {
-                    for (j in 0..2) {
-                        Box(
-                            modifier = Modifier
-                                .size(100.dp)
-                                .padding(4.dp)
-                                .background(Color.LightGray, CircleShape)
-                                .clickable {
-                                    if (board[i][j].isEmpty() && currentPlayer == "X") {
-                                        board = board.mapIndexed { row, cols ->
-                                            cols.mapIndexed { col, value ->
-                                                if (row == i && col == j) "X" else value
-                                            }.toMutableList()
-                                        }
-                                        val winner = checkWinner()
-                                        if (winner != null) {
-                                            when (winner) {
-                                                "X" -> {
-                                                    playerWins++
-                                                    message = "Tu ganas!"
-                                                }
-                                                "O" -> {
-                                                    aiWins++
-                                                    message = "La IA gana!"
-                                                }
-                                                "Empate" -> {
-                                                    draws++ // Incrementar empates
-                                                    message = "Es un empate!"
-                                                }
-                                            }
-                                        } else {
-                                            currentPlayer = "O"
-                                            aiMove()
-                                            val aiWinner = checkWinner()
-                                            if (aiWinner != null) {
-                                                when (aiWinner) {
-                                                    "X" -> {
-                                                        playerWins++
-                                                        message = "Tu ganas!"
-                                                    }
-                                                    "O" -> {
-                                                        aiWins++
-                                                        message = "La IA gana!"
-                                                    }
-                                                    "Empate" -> {
-                                                        draws++ // Incrementar empates
-                                                        message = "Es un empate!"
-                                                    }
-                                                }
-                                            } else {
-                                                currentPlayer = "X"
-                                            }
-                                        }
-                                    }
-                                },
-                            contentAlignment = Alignment.Center
+                Text(
+                    text = "Tic Tac Toe",
+                    fontSize = 32.sp,
+                    color = Color(0xFFFFF7C2),
+                    modifier = Modifier.padding(16.dp).padding(top = 64.dp)
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .align(Alignment.Center),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text(
-                                text = board[i][j],
-                                fontSize = 32.sp,
-                                textAlign = TextAlign.Center,
-                                color = Color.Black
-                            )
+                            Text(text = "Jugador 😎: $playerWins", fontSize = 18.sp)
+                            Text(text = "IA 🤖: $aiWins", fontSize = 18.sp)
+                            Text(text = "Empates 😮: $draws", fontSize = 18.sp) // Mostrar empates
                         }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        // Tablero
+                        for (i in 0..2) {
+                            Row {
+                                for (j in 0..2) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(100.dp)
+                                            .padding(4.dp)
+                                            .background(Color.LightGray, CircleShape)
+                                            .clickable {
+                                                if (board[i][j].isEmpty() && currentPlayer == "X") {
+                                                    board = board.mapIndexed { row, cols ->
+                                                        cols.mapIndexed { col, value ->
+                                                            if (row == i && col == j) "X" else value
+                                                        }.toMutableList()
+                                                    }
+                                                    val winner = checkWinner()
+                                                    if (winner != null) {
+                                                        when (winner) {
+                                                            "X" -> {
+                                                                playerWins++
+                                                                message = "Tu ganas!"
+                                                            }
+                                                            "O" -> {
+                                                                aiWins++
+                                                                message = "La IA gana!"
+                                                            }
+                                                            "Empate" -> {
+                                                                draws++ // Incrementar empates
+                                                                message = "Es un empate!"
+                                                            }
+                                                        }
+                                                    } else {
+                                                        currentPlayer = "O"
+                                                        aiMove()
+                                                        val aiWinner = checkWinner()
+                                                        if (aiWinner != null) {
+                                                            when (aiWinner) {
+                                                                "X" -> {
+                                                                    playerWins++
+                                                                    message = "Tu ganas!"
+                                                                }
+                                                                "O" -> {
+                                                                    aiWins++
+                                                                    message = "La IA gana!"
+                                                                }
+                                                                "Empate" -> {
+                                                                    draws++ // Incrementar empates
+                                                                    message = "Es un empate!"
+                                                                }
+                                                            }
+                                                        } else {
+                                                            currentPlayer = "X"
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = board[i][j],
+                                            fontSize = 32.sp,
+                                            textAlign = TextAlign.Center,
+                                            color = Color.Black
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(text = message, fontSize = 20.sp)
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(text = message, fontSize = 20.sp)
-            Spacer(modifier = Modifier.height(16.dp))
-            Button(onClick = { resetBoard() },
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFF7C2))) {
-                Text("Reiniciar juego")
+
+            // NavigationBar en la parte inferior
+            NavigationBar(
+                modifier = Modifier.align(Alignment.BottomCenter)
+            ) {
+                NavigationBarItem(
+                    icon = { Icon(Icons.Default.PlayArrow, contentDescription = "Nuevo juego") },
+                    label = { Text("Nuevo") },
+                    selected = false,
+                    onClick = { resetBoard() }
+                )
+                NavigationBarItem(
+                    icon = { Icon(Icons.Default.Settings, contentDescription = "Dificultad") },
+                    label = { Text("Dificultad: $aiDifficulty") },
+                    selected = false,
+                    onClick = { showDifficultyDialog = true }
+                )
+                NavigationBarItem(
+                    icon = { Icon(Icons.Default.ExitToApp, contentDescription = "Salir") },
+                    label = { Text("Salir") },
+                    selected = false,
+                    onClick = { showExitDialog = true }
+                )
             }
         }
-    }
-}
 
+        // Diálogo de selección de dificultad
+        if (showDifficultyDialog) {
+            AlertDialog(
+                onDismissRequest = { showDifficultyDialog = false },
+                title = { Text("Seleccionar dificultad") },
+                text = {
+                    Column {
+                        listOf("Fácil", "Normal", "Difícil").forEach { difficulty ->
+                            Text(
+                                text = difficulty,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        aiDifficulty = difficulty
+                                        showDifficultyDialog = false
+                                    }
+                                    .padding(vertical = 18.dp),
+                                textAlign = TextAlign.Center,
+                                fontSize = 18.sp
+                            )
+                        }
+                    }
+                },
+                confirmButton = {}
+            )
+        }
+
+        // Diálogo de confirmación de salida
+        if (showExitDialog) {
+            AlertDialog(
+                onDismissRequest = { showExitDialog = false },
+                title = { Text("Salir del juego") },
+                text = { Text("¿Estás seguro de que quieres salir?") },
+                confirmButton = {
+                    TextButton(
+                        onClick = { System.exit(0) }
+                    ) {
+                        Text("Sí")
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = { showExitDialog = false }
+                    ) {
+                        Text("No")
+                    }
+                }
+            )
+        }
+    }
