@@ -1,5 +1,5 @@
 package com.example.reto3tictactoe
-
+import android.media.MediaPlayer
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -19,9 +19,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
 import com.example.reto3tictactoe.ui.theme.Reto3TicTacToeTheme
 
 class MainActivity : ComponentActivity() {
+    private var mediaPlayer: MediaPlayer? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -31,8 +35,27 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+
+        // Iniciar la música cuando se cree la actividad
+        startMusic()
+    }
+
+    // Función para iniciar la música
+    private fun startMusic() {
+        mediaPlayer = MediaPlayer.create(this, R.raw.background_music) // Reemplaza con el nombre de tu archivo
+        mediaPlayer?.isLooping = true // Hace que la música se repita en bucle
+        mediaPlayer?.start() // Comienza a reproducir la música
+    }
+
+    // Asegúrate de detener la música cuando la actividad se destruya
+    override fun onDestroy() {
+        super.onDestroy()
+        mediaPlayer?.release() // Libera los recursos del MediaPlayer
+        mediaPlayer = null
     }
 }
+
+
 
 @Composable
 fun TicTacToeGame() {
@@ -175,62 +198,92 @@ fun TicTacToeGame() {
         message = "Tú turno!"
     }
 
-
-        Box(
-            modifier = Modifier.fillMaxSize()
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 64.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Column(
+            Text(
+                text = "Tic Tac Toe",
+                fontSize = 32.sp,
+                color = Color(0xFFFFF7C2),
+                modifier = Modifier.padding(16.dp).padding(top = 64.dp)
+            )
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 64.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .fillMaxSize()
+                    .padding(16.dp)
             ) {
-                Text(
-                    text = "Tic Tac Toe",
-                    fontSize = 32.sp,
-                    color = Color(0xFFFFF7C2),
-                    modifier = Modifier.padding(16.dp).padding(top = 64.dp)
+                // Imagen de fondo
+                Image(
+                    painter = painterResource(id = R.drawable.board),
+                    contentDescription = "Fondo del tablero",
+                    modifier = Modifier.fillMaxSize()
                 )
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp)
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .align(Alignment.Center),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
 
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.Center),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(text = "Jugador 😎: $playerWins", fontSize = 18.sp)
+                        Text(text = "IA 🤖: $aiWins", fontSize = 18.sp)
+                        Text(text = "Empates 😮: $draws", fontSize = 18.sp) // Mostrar empates
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    // Tablero
+                    for (i in 0..2) {
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp), // Espaciado entre filas
+                            horizontalArrangement = Arrangement.Center // Centrado horizontal
                         ) {
-                            Text(text = "Jugador 😎: $playerWins", fontSize = 18.sp)
-                            Text(text = "IA 🤖: $aiWins", fontSize = 18.sp)
-                            Text(text = "Empates 😮: $draws", fontSize = 18.sp) // Mostrar empates
-                        }
-                        Spacer(modifier = Modifier.height(16.dp))
-                        // Tablero
-                        for (i in 0..2) {
-                            Row {
-                                for (j in 0..2) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(100.dp)
-                                            .padding(4.dp)
-                                            .background(Color.LightGray, CircleShape)
-                                            .clickable {
-                                                if (board[i][j].isEmpty() && currentPlayer == "X") {
-                                                    board = board.mapIndexed { row, cols ->
-                                                        cols.mapIndexed { col, value ->
-                                                            if (row == i && col == j) "X" else value
-                                                        }.toMutableList()
+                            for (j in 0..2) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(120.dp) // Tamaño ajustado de las celdas
+                                        .padding(18.dp) // Espaciado entre celdas
+                                        .background(Color.Transparent, CircleShape) // Fondo transparente
+                                        .clickable {
+                                            if (board[i][j].isEmpty() && currentPlayer == "X") {
+                                                board = board.mapIndexed { row, cols ->
+                                                    cols.mapIndexed { col, value ->
+                                                        if (row == i && col == j) "X" else value
+                                                    }.toMutableList()
+                                                }
+                                                val winner = checkWinner()
+                                                if (winner != null) {
+                                                    when (winner) {
+                                                        "X" -> {
+                                                            playerWins++
+                                                            message = "Tu ganas!"
+                                                        }
+                                                        "O" -> {
+                                                            aiWins++
+                                                            message = "La IA gana!"
+                                                        }
+                                                        "Empate" -> {
+                                                            draws++ // Incrementar empates
+                                                            message = "Es un empate!"
+                                                        }
                                                     }
-                                                    val winner = checkWinner()
-                                                    if (winner != null) {
-                                                        when (winner) {
+                                                } else {
+                                                    currentPlayer = "O"
+                                                    aiMove()
+                                                    val aiWinner = checkWinner()
+                                                    if (aiWinner != null) {
+                                                        when (aiWinner) {
                                                             "X" -> {
                                                                 playerWins++
                                                                 message = "Tu ganas!"
@@ -245,72 +298,68 @@ fun TicTacToeGame() {
                                                             }
                                                         }
                                                     } else {
-                                                        currentPlayer = "O"
-                                                        aiMove()
-                                                        val aiWinner = checkWinner()
-                                                        if (aiWinner != null) {
-                                                            when (aiWinner) {
-                                                                "X" -> {
-                                                                    playerWins++
-                                                                    message = "Tu ganas!"
-                                                                }
-                                                                "O" -> {
-                                                                    aiWins++
-                                                                    message = "La IA gana!"
-                                                                }
-                                                                "Empate" -> {
-                                                                    draws++ // Incrementar empates
-                                                                    message = "Es un empate!"
-                                                                }
-                                                            }
-                                                        } else {
-                                                            currentPlayer = "X"
-                                                        }
+                                                        currentPlayer = "X"
                                                     }
                                                 }
-                                            },
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            text = board[i][j],
-                                            fontSize = 32.sp,
-                                            textAlign = TextAlign.Center,
-                                            color = Color.Black
-                                        )
+                                            }
+                                        },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    // Cambiar la representación de "X" y "O" a imágenes
+                                    when (board[i][j]) {
+                                        "X" -> {
+                                            Image(
+                                                painter = painterResource(id = R.drawable.x_image),
+                                                contentDescription = "X",
+                                                modifier = Modifier.size(60.dp) // Ajustar el tamaño de la imagen
+                                            )
+                                        }
+                                        "O" -> {
+                                            Image(
+                                                painter = painterResource(id = R.drawable.o_image),
+                                                contentDescription = "O",
+                                                modifier = Modifier.size(60.dp) // Ajustar el tamaño de la imagen
+                                            )
+                                        }
+                                        else -> {} // Si no hay nada en la celda, no mostramos nada
                                     }
                                 }
                             }
                         }
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(text = message, fontSize = 20.sp)
                     }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(text = message, fontSize = 20.sp)
                 }
             }
-
-            // NavigationBar en la parte inferior
-            NavigationBar(
-                modifier = Modifier.align(Alignment.BottomCenter)
-            ) {
-                NavigationBarItem(
-                    icon = { Icon(Icons.Default.PlayArrow, contentDescription = "Nuevo juego") },
-                    label = { Text("Nuevo") },
-                    selected = false,
-                    onClick = { resetBoard() }
-                )
-                NavigationBarItem(
-                    icon = { Icon(Icons.Default.Settings, contentDescription = "Dificultad") },
-                    label = { Text("Dificultad: $aiDifficulty") },
-                    selected = false,
-                    onClick = { showDifficultyDialog = true }
-                )
-                NavigationBarItem(
-                    icon = { Icon(Icons.Default.ExitToApp, contentDescription = "Salir") },
-                    label = { Text("Salir") },
-                    selected = false,
-                    onClick = { showExitDialog = true }
-                )
-            }
         }
+
+        // NavigationBar en la parte inferior
+        NavigationBar(
+            modifier = Modifier.align(Alignment.BottomCenter)
+        ) {
+            NavigationBarItem(
+                icon = { Icon(Icons.Default.PlayArrow, contentDescription = "Nuevo juego") },
+                label = { Text("Nuevo") },
+                selected = false,
+                onClick = { resetBoard() }
+            )
+            NavigationBarItem(
+                icon = { Icon(Icons.Default.Settings, contentDescription = "Dificultad") },
+                label = { Text("Dificultad: $aiDifficulty") },
+                selected = false,
+                onClick = { showDifficultyDialog = true }
+            )
+            NavigationBarItem(
+                icon = { Icon(Icons.Default.ExitToApp, contentDescription = "Salir") },
+                label = { Text("Salir") },
+                selected = false,
+                onClick = { showExitDialog = true }
+            )
+        }
+    }
+
+
+
 
         // Diálogo de selección de dificultad
         if (showDifficultyDialog) {
